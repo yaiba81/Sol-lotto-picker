@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lotto-lab"
+version = "0.1.0"
+description = "Local PCSO lotto history analysis and weighted-random experimentation lab."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "Lotto Lab contributors" }]
+dependencies = [
+    "PySide6>=6.8,<7",
+    "SQLAlchemy>=2.0,<3",
+    "pandas>=2.2,<4",
+    "numpy>=2.1,<3",
+    "scipy>=1.14,<2",
+    "matplotlib>=3.9,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<10",
+    "pytest-cov>=6,<8",
+]
+packaging = ["pyinstaller>=6.11,<7"]
+
+[project.scripts]
+lotto-lab = "lotto_lab.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["lotto_lab"]
+branch = true
+

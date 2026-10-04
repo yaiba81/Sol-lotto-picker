@@ -218,3 +218,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Lotto desktop local test output
+/lotto-desktop/.test_tmp*/
+/lotto-desktop/artifacts/mpl-cache/
+
+# Lotto mobile dependencies, generated output, and local tooling
+/lotto-mobile/.git/
+/lotto-mobile/.claude/
+/lotto-mobile/node_modules/
+/lotto-mobile/.expo/
+/lotto-mobile/dist/
+/lotto-mobile/web-build/
+/lotto-mobile/android/
+/lotto-mobile/ios/
+/lotto-mobile/expo-env.d.ts
+/lotto-mobile/*.tsbuildinfo
