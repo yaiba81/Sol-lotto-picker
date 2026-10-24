@@ -50,9 +50,9 @@ class ResultsSyncController(QObject):
     @Slot()
     def start(self) -> None:
         if self.is_running:
-            self.status_changed.emit("Official results synchronization is already running.")
+            self.status_changed.emit("Results synchronization is already running.")
             return
-        self.status_changed.emit("Checking PCSO LottoMatik for recent official results…")
+        self.status_changed.emit("Checking recent lotto results...")
         thread = QThread(self)
         worker = ResultsSyncWorker(self.service, per_game=50)
         worker.moveToThread(thread)
@@ -70,21 +70,25 @@ class ResultsSyncController(QObject):
     @Slot(object)
     def _complete(self, result: SyncResult) -> None:
         if result.errors and not result.fetched:
-            message = "Could not reach official results. Existing local history was kept."
+            message = "Could not reach results feeds. Existing local history was kept."
         else:
             message = (
-                f"Official results checked: {result.inserted} new, "
+                f"Results checked: {result.inserted} new, "
                 f"{result.fetched - result.inserted} already stored."
             )
             if result.errors:
-                message += f" {len(result.errors)} game feed(s) unavailable."
+                message += f" {len(result.errors)} result(s) could not be used."
+            if result.outdated:
+                message += f" Older than expected: {', '.join(result.outdated)}."
+            if result.failovers:
+                message += f" Backup feed used for {len(result.failovers)} game(s)."
         self.status_changed.emit(message)
         self.synchronized.emit(result)
 
     @Slot(str)
     def _failed(self, message: str) -> None:
         self.status_changed.emit(
-            f"Official results update failed: {message}. Existing local history was kept."
+            f"Results update failed: {message}. Existing local history was kept."
         )
 
     @Slot()

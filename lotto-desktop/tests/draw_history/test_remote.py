@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 
 from lotto_lab.domain import GameCode, HistoricalDraw
-from lotto_lab.draw_history.remote import OfficialResultsClient, ResultsSyncService
+from lotto_lab.draw_history.remote import OfficialResultsClient, PublicResultsClient, ResultsSyncService
 from lotto_lab.draw_history.repository import DrawRepository
 from lotto_lab.persistence.bootstrap import seed_supported_games
 from lotto_lab.persistence.database import Database
@@ -91,6 +91,57 @@ def test_sync_keeps_successful_games_when_one_feed_fails(tmp_path) -> None:
     assert result.fetched == 4
     assert result.inserted == 4
     assert result.rejected == 1
+    assert len(result.outdated) == 4
     assert repository.count() == 4
+    database.dispose()
+
+
+def test_public_page_matches_dated_links_to_numbers() -> None:
+    page = '''<script type="application/ld+json">{"@type":"ItemList",
+    "@id":"https://lotto.works/en/results/lotto-6-42/#visible-results",
+    "itemListElement":[{"item":{"url":"https://lotto.works/en/results/lotto-6-42/2026-10-22/9pm/"}}]}
+    </script><ol data-winning-numbers><li>22</li><li>42</li><li>37</li><li>21</li><li>08</li><li>17</li></ol>'''
+    client = PublicResultsClient(opener=lambda request, timeout: FakeHtmlResponse(page))
+
+    assert client.fetch_recent(GameCode.LOTTO_6_42, limit=1) == (
+        HistoricalDraw(GameCode.LOTTO_6_42, date(2026, 10, 22), (22, 42, 37, 21, 8, 17)),
+    )
+    with pytest.raises(ValueError, match="dates and numbers"):
+        PublicResultsClient.parse_page(GameCode.LOTTO_6_42, page.replace("data-winning-numbers", "data-other"))
+    with pytest.raises(ValueError, match="dates and numbers"):
+        PublicResultsClient.parse_page(GameCode.MEGA_LOTTO_6_45, page)
+
+
+class FakeHtmlResponse(FakeResponse):
+    def __init__(self, html: str) -> None:
+        self.payload = html.encode()
+
+
+def test_sync_falls_back_and_preserves_conflicting_history(tmp_path) -> None:
+    database = Database(f"sqlite:///{(tmp_path / 'fallback.sqlite3').as_posix()}")
+    database.create_schema()
+    seed_supported_games(database)
+    repository = DrawRepository(database)
+    old = HistoricalDraw(GameCode.LOTTO_6_42, date(2026, 1, 1), (1, 2, 3, 4, 5, 42))
+    repository.add_many((old,), source="original")
+
+    class BrokenClient:
+        def fetch_recent(self, game_code, *, limit):
+            raise ConnectionError("primary unavailable")
+
+    class BackupClient:
+        source = "backup"
+
+        def fetch_recent(self, game_code, *, limit):
+            maximum = {"6/42": 42, "6/45": 45, "6/49": 49, "6/55": 55, "6/58": 58}[game_code.value]
+            numbers = (1, 2, 3, 4, 6, maximum) if game_code == GameCode.LOTTO_6_42 else (1, 2, 3, 4, 5, maximum)
+            return (HistoricalDraw(game_code, date(2026, 1, 1), numbers),)
+
+    result = ResultsSyncService(repository, BrokenClient(), BackupClient()).synchronize(per_game=1)
+
+    assert len(result.failovers) == 5
+    assert result.rejected == 1
+    assert repository.list_draws(game_code=GameCode.LOTTO_6_42) == (old,)
+    assert repository.count() == 5
     database.dispose()
 

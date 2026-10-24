@@ -65,11 +65,13 @@ repository skips existing game/date identities rather than overwriting source hi
 `AnalyticsService.snapshot()` is the only production path used to assemble generator
 history and applies a strict cutoff plus a per-game draw-count window.
 
-`OfficialResultsClient` accesses only the public PCSO LottoMatik HTTPS history
-endpoint, requests at most 100 rows per game, caps response bodies at 2 MB, validates
-JSON fields through `HistoricalDraw`, and rejects future dates. The normal sync asks
-for 50 recent records per supported game. `ResultsSyncService` tolerates individual
-game-feed failures and never deletes or overwrites local history. `ResultsSyncController`
+`PublicResultsClient` reads the public Lotto.Works HTTPS results pages, caps responses
+at 400 KB, matches dated links to visible number groups, and validates draws through
+`HistoricalDraw`. `OfficialResultsClient` uses the PCSO LottoMatik HTTPS history
+endpoint as a fallback, requests at most 100 rows per game, and caps JSON at 2 MB.
+The normal sync asks for 50 recent records per supported game. `ResultsSyncService`
+reports feeds older than the published draw schedule, tolerates individual feed
+failures, and never deletes or overwrites local history. `ResultsSyncController`
 runs this work on a `QThread`; it starts automatically through a zero-delay Qt timer
 after the main window appears and is also triggered by the Draw History refresh button.
 
@@ -232,9 +234,9 @@ single JSON column merely for convenience.
 9. Long analysis and simulation work never runs on the Qt GUI thread. Workers report
    progress/results through queued signals, and widgets are touched only on the GUI
    thread.
-10. Local data stays local unless the user explicitly invokes an import or future
-    network feature. Automatic PCSO LottoMatik synchronization is the sole currently
-    approved network exception and is read-only toward the remote service.
+10. Local data stays local except the read-only automatic results synchronization
+    from Lotto.Works and, when needed, PCSO LottoMatik. No local draw or ticket data
+    is sent to these sources.
 
 ## Testing approach
 

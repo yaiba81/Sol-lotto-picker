@@ -101,7 +101,7 @@ class MainWindow(QMainWindow):
             self.today_page.results_requested.connect(lambda: self.show_page(2))
         if database is not None and self.draw_history_page is not None:
             self.results_sync = ResultsSyncController(
-                ResultsSyncService(DrawRepository(database)), self
+                ResultsSyncService(DrawRepository(database), schedule=schedule), self
             )
             self.draw_history_page.sync_requested.connect(self.start_results_sync)
             self.results_sync.status_changed.connect(self._show_sync_status)

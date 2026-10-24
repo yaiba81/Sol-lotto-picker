@@ -78,7 +78,7 @@ class DrawHistoryPage(QWidget):
         self.import_button.setObjectName("primaryButton")
         self.import_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.import_button.clicked.connect(self.choose_csv)
-        self.sync_button = QPushButton("Check official results")
+        self.sync_button = QPushButton("Check latest results")
         self.sync_button.setObjectName("primaryButton")
         self.sync_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.sync_button.clicked.connect(self.sync_requested.emit)

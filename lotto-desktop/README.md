@@ -255,25 +255,29 @@ score. Generated tickets and their factor trails are saved in the local database
 
 
 
-### Automatic official-results update
+### Automatic results update
 
 
 
-Each time Lotto Lab opens, it checks the public PCSO LottoMatik results service in a
+Each time Lotto Lab opens, it checks public Lotto.Works results pages in a
 
 background thread and requests the 50 most recent draws for each supported game.
 
 Validated new draws are inserted; existing game/date records are preserved. Open
 
-**Draw History** to see synchronization status or select **Check official results**
+**Draw History** to see synchronization status or select **Check latest results**
 
 to refresh manually.
 
 
 
-The source is `https://lottomatik.pcso.gov.ph/api/backend/get-game-history`. If the
+The primary source is `https://lotto.works/en/results/`; the PCSO LottoMatik
 
-computer is offline or a feed is unavailable, startup continues normally and all
+history endpoint is a fallback if a public results page fails. The status warns
+
+when a feed is older than the expected draw date. If the computer is offline or a
+
+feed is unavailable, startup continues normally and all
 
 existing local history is retained. The upstream service can change independently,
 
